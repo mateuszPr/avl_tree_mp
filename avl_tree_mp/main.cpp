@@ -19,9 +19,11 @@ class AVLTree
 public:
 	NodeAVL<T> *insert(NodeAVL<T> *root, T value);
 	NodeAVL<T> *remove(NodeAVL<T> *root, T value);
+	void display(NodeAVL<T> *root, int start);
 	void inorder(NodeAVL<T> *tree);
 
 };
+
 
 
 template<class T>
@@ -45,6 +47,8 @@ NodeAVL<T>* AVLTree<T>::insert(NodeAVL<T> *root, T value)
 	return root;
 }
 
+
+
 template<class T>
 NodeAVL<T>* AVLTree<T>::remove(NodeAVL<T> *root, T value)
 {
@@ -62,6 +66,7 @@ NodeAVL<T>* AVLTree<T>::remove(NodeAVL<T> *root, T value)
 	}
 	else
 	{
+		//Zero or one child
 		if (root->left == NULL)
 		{
 			NodeAVL<T>* temporary = root->right;
@@ -74,6 +79,18 @@ NodeAVL<T>* AVLTree<T>::remove(NodeAVL<T> *root, T value)
 			delete root;
 			return temporary;
 		}
+		//Two or more childs
+
+		NodeAVL<T>* temp;
+		temp = root->right;
+
+		while (temp->left != NULL)
+		{								//Finding the lowest element of the right child
+			temp = temp->left;
+		}
+
+		root->data = temp->data;
+		root->right = remove(root->right, temp->data);
 	}
 	return root;
 }
@@ -89,18 +106,39 @@ void AVLTree<T>::inorder(NodeAVL<T> *tree)
 	inorder(tree->right);
 }
 
+
+template<class T>
+void AVLTree<T>::display(NodeAVL<T> *root, int start)
+{
+	int i = 1;
+	if (root)
+	{
+		display(root->right, start + 1);
+		cout << "\n";
+		for (i = 0; i < start ; i++)
+			cout << "        ";
+		cout << root->data;
+		display(root->left, start + 1);
+	}
+}
+
+
+
 int main()
 {
 	NodeAVL<int> *root = NULL;
 	AVLTree<int> start;
-	root = start.insert(root, 8);
-	root = start.insert(root, 11);
-	root = start.insert(root, 121);
+	root = start.insert(root, 50);
+	root = start.insert(root, 30);
+	root = start.insert(root, 12);
+	root = start.insert(root, 20);
+	root = start.insert(root, 10);
 
 
+	root = start.remove(root, 30);
 
-	start.inorder(root);
-	root = start.remove(root, 8);
+	start.display(root, 0);
+
 
 	getchar();
 	return 0;
