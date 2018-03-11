@@ -17,7 +17,7 @@ struct NodeAVL
 template<class T>
 NodeAVL<T>::NodeAVL()
 {
-	height = 1;   //always start node with height = 1
+	height = 0;   //always start node with height = 0
 }
 
 
@@ -48,36 +48,39 @@ NodeAVL<T>* AVLTree<T>::insert(NodeAVL<T> *root, T value)
 		root->left = NULL;
 		root->right = NULL;
 	}
+
 	else if (value < root->data)
 	{
 		root->left = insert(root->left, value);
+		int balance = checkBalace(root);
+
+		if (balance > 1 && value < root->left->data)  //img: https://www.tutorialspoint.com/data_structures_algorithms/images/avl_right_rotation.jpg
+			return RR(root);
+		if (balance > 1 && value > root->left->data)  //img: http://btechsmartclass.com/DS/images/LR%20Rotation.png
+		{
+			root->left = LR(root->left);
+			return RR(root);
+		}
 	}
+
+
 	else if (value >= root->data)
 	{
 		root->right = insert(root->right, value);
+		int balance = checkBalace(root);
+
+		if (balance < -1 && value > root->right->data)  //img: https://www.tutorialspoint.com/data_structures_algorithms/images/avl_right_rotation.jpg
+			return LR(root);
+
+		if (balance < -1 && value < root->right->data)  //img: http://btechsmartclass.com/DS/images/RL%20Rotation.png
+		{
+			root->right = RR(root->right);
+			return LR(root);
+		}
 	}
 
 	root->height = 1 + max(getHeight(root->left), getHeight(root->right));
 
-	int balance = checkBalace(root);
-
-	if (balance > 1 && value < root->left->data)
-		return RR(root);
-
-	if (balance < -1 && value > root->right->data)
-		return LR(root);
-
-	if (balance > 1 && value > root->left->data)
-	{
-		root->left = LR(root->left);
-		return RR(root);
-	}
-
-	if (balance < -1 && value < root->right->data)
-	{
-		root->right = RR(root->right);
-		return LR(root);
-	}
 
 	return root;
 }
@@ -101,7 +104,7 @@ NodeAVL<T>* AVLTree<T>::remove(NodeAVL<T> *root, T value)
 	else  //If the value passed is equal to the element that I want to remove  
 	{
 		//Zero or one child
-		if (root->left == NULL)  
+		if (root->left == NULL)
 		{
 			NodeAVL<T>* temporary = root->right;
 			delete root;
@@ -125,46 +128,71 @@ NodeAVL<T>* AVLTree<T>::remove(NodeAVL<T> *root, T value)
 			}
 
 			root->data = temp->data;
-			root->right = remove(root->right, temp->data);  //Finding the old element, that we dont need anymore
+
+			remove(root->right, temp->data);  //Finding the old element, that we dont need anymore
 		}
 	}
+
+	root->height = 1 + max(getHeight(root->left), getHeight(root->right));  //Remember about 1, that represent first element of the tree
+
+	int balance = checkBalace(root);
+
+	if (balance > 1 && checkBalace(root->left) >= 0)
+		return RR(root);
+
+	else if (balance > 1 && checkBalace(root->left) < 0)
+	{
+		root->left = LR(root->left);
+		return RR(root);
+	}
+
+	else if (balance < -1 && checkBalace(root->right) <= 0)
+		return LR(root);
+
+	else if (balance < -1 && checkBalace(root->right) > 0)
+	{
+		root->right = RR(root->right);
+		return LR(root);
+	}
+
 	return root;
 }
 
-template<class T>
-NodeAVL<T>* AVLTree<T>::RR(NodeAVL<T> *root)
-{
-	NodeAVL<T> *firstChild = root->left;
-	NodeAVL<T> *nextChild = firstChild->right;
 
-	firstChild->right = root;
-	root->left = nextChild;
+
+
+template<class T>
+NodeAVL<T>* AVLTree<T>::RR(NodeAVL<T> *root)   //Left child of newParent is still the left child of the root, so we dont have to update this child
+{
+
+	NodeAVL<T> *newParent = root->left;
+	root->left = newParent->right;
+	newParent->right = root;
 
 	//change heights
-	firstChild->height = max(getHeight(firstChild->left), getHeight(firstChild->right)) + 1;
+	newParent->height = max(getHeight(newParent->left), getHeight(newParent->right)) + 1;
 	root->height = max(getHeight(root->left), getHeight(root->right)) + 1;
 
-	return firstChild;
+	return newParent;
 }
 
 
 
 
 template<class T>
-NodeAVL<T>* AVLTree<T>::LR(NodeAVL<T> *root)
+NodeAVL<T>* AVLTree<T>::LR(NodeAVL<T> *root)    //Right child of newParent is still the right child of the root, so we dont have to update this child
 {
-	NodeAVL<T> *firstChild = root->right;
-	NodeAVL<T> *nextChild = firstChild->left;
-
-	firstChild->left = root;
-	root->right = nextChild;
+	NodeAVL<T> *newParent = root->right;
+	root->right = newParent->left;
+	newParent->left = root;
 
 	//change heights
-	firstChild->height = max(getHeight(firstChild->left), getHeight(firstChild->right)) + 1;
+	newParent->height = max(getHeight(newParent->left), getHeight(newParent->right)) + 1;
 	root->height = max(getHeight(root->left), getHeight(root->right)) + 1;
 
-	return firstChild;
+	return newParent;
 }
+
 
 template<class T>
 int AVLTree<T>::getHeight(NodeAVL<T>* root)
@@ -178,10 +206,11 @@ int AVLTree<T>::getHeight(NodeAVL<T>* root)
 template<class T>
 int AVLTree<T>::max(int first, int second)
 {
-	if (first >= second)
+	if (first > second)
 		return first;
 	return second;
 }
+
 
 template<class T>
 int AVLTree<T>::checkBalace(NodeAVL<T>* root)
@@ -218,32 +247,45 @@ void AVLTree<T>::display(NodeAVL<T> *root, int start)
 	}
 }
 
-
-
 int main()
 {
 	NodeAVL<int> *root = NULL;
 	AVLTree<int> start;
 
-	root = start.insert(root, 50);
-	root = start.insert(root, 49);
-	root = start.insert(root, 48);
-	root = start.insert(root, 47);
-	root = start.insert(root, 45);
-	root = start.insert(root, 44);
-	root = start.insert(root, 43);
-	root = start.insert(root, 42);
-	root = start.insert(root, 41);
-	root = start.insert(root, 40);
-	root = start.remove(root, 50);
+	root = start.insert(root, 10);
+	root = start.insert(root, 9);
+	root = start.insert(root, 8);
 
 
+	root = start.insert(root, 7);
+	root = start.insert(root, 6);
+	root = start.insert(root, 5);
 
 
 	start.display(root, 0);
+
+
+	cout << endl;
+	cout << endl;
+	cout << endl;
+	root = start.remove(root, 7);
+
+
+	start.display(root, 0);
+
+	cout << endl;
+	cout << endl;
+	cout << endl;
+
+	cout << root->height << endl;
+
 
 
 
 	getchar();
 	return 0;
 }
+
+
+
+
